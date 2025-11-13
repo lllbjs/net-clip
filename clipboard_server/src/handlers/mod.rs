@@ -1,17 +1,19 @@
+pub mod auth;
+pub mod clips;
+
 use axum::{
     extract::State,
     http::StatusCode,
     response::Json,
 };
-use serde_json::{json, Value};
+use serde_json::Value;
 
-use crate::database::{check_database_health, models::HealthCheck, DbPool};
+use crate::database::{check_database_health, models::{HealthCheck}, DbPool};
 
 /// 健康检查接口
 pub async fn health_check(
     State(pool): State<DbPool>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    // 检查数据库连接
     match check_database_health(&pool).await {
         Ok(_) => {
             let health_status = HealthCheck {
@@ -20,7 +22,7 @@ pub async fn health_check(
                 timestamp: chrono::Utc::now(),
             };
 
-            Ok(Json(json!({
+            Ok(Json(serde_json::json!({
                 "status": "success",
                 "data": health_status,
                 "message": "服务端正常运行 + MySQL 连接成功 ✅"
@@ -30,7 +32,7 @@ pub async fn health_check(
             tracing::error!("数据库连接失败: {}", e);
             Err((
                 StatusCode::SERVICE_UNAVAILABLE,
-                Json(json!({
+                Json(serde_json::json!({
                     "status": "error",
                     "message": format!("数据库连接失败: {}", e)
                 })),
@@ -41,7 +43,7 @@ pub async fn health_check(
 
 /// 根路径欢迎接口
 pub async fn root() -> Json<Value> {
-    Json(json!({
+    Json(serde_json::json!({
         "message": "欢迎使用 Axum + SQLx MySQL 服务",
         "version": "1.0.0"
     }))
